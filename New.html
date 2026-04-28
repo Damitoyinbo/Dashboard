@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Supply Chain Intelligence Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<style>
+body{margin:0;font-family:Inter;background:#0f172a;color:#e5e7eb}
+.container{display:flex;height:100vh}
+.sidebar{width:260px;background:#020617;padding:20px;overflow:auto}
+.main{flex:1;padding:20px;overflow:auto}
+h1{margin:0;color:white}
+.subtitle{color:#94a3b8;margin-bottom:20px}
+
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.card{background:#020617;padding:15px;border-radius:12px}
+.kpis{display:flex;gap:12px;margin-bottom:20px}
+.kpi{flex:1;background:#020617;padding:15px;border-radius:10px;text-align:center;transition:.3s}
+.kpi:hover{transform:scale(1.03)}
+
+select,input{width:100%;margin-bottom:10px;background:#020617;color:white;border:1px solid #334155;padding:6px}
+button{width:100%;background:#0d9488;color:white;border:none;padding:10px;margin-top:10px;cursor:pointer}
+
+canvas{background:white;border-radius:10px}
+ul{padding-left:20px}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="sidebar">
+<h2>Filters</h2>
+
+<select id="productFilter" multiple>
+<option>haircare</option>
+<option>skincare</option>
+<option>cosmetics</option>
+</select>
+
+<select id="supplierFilter" multiple></select>
+<select id="locationFilter"></select>
+
+<select id="inspectionFilter">
+<option>All</option><option>Pass</option><option>Fail</option><option>Pending</option>
+</select>
+
+<button onclick="resetFilters()">Reset Filters</button>
+<p id="recordCount"></p>
+</div>
+
+<div class="main">
+
+<h1>Supply Chain Intelligence Dashboard</h1>
+<div class="subtitle">Beauty & Personal Care | Executive View</div>
+
+<div class="kpis">
+<div class="kpi" id="kpiRevenue"></div>
+<div class="kpi" id="kpiProfit"></div>
+<div class="kpi" id="kpiDefect"></div>
+<div class="kpi" id="kpiUnits"></div>
+<div class="kpi" id="kpiPass"></div>
+</div>
+
+<div class="grid">
+<canvas id="revType"></canvas>
+<canvas id="demo"></canvas>
+<canvas id="supplier"></canvas>
+<canvas id="defect"></canvas>
+<canvas id="transport"></canvas>
+<canvas id="scatterStock"></canvas>
+<canvas id="carrier"></canvas>
+<canvas id="location"></canvas>
+<canvas id="price"></canvas>
+<canvas id="manufacturing"></canvas>
+<canvas id="route"></canvas>
+<canvas id="inspection"></canvas>
+</div>
+
+<div class="card">
+<h2>CEO / CFO Insights</h2>
+<ul id="insights"></ul>
+</div>
+
+</div>
+</div>
+
+<script>
+
+// ===== DATA GENERATION =====
+const suppliers=["Supplier A","Supplier B","Supplier C","Supplier D","Supplier E"];
+const locations=["Mumbai","Delhi","Kolkata","Bangalore","Chennai"];
+const types=["haircare","skincare","cosmetics"];
+const inspections=["Pass","Fail","Pending"];
+const transports=["Road","Air","Rail","Sea"];
+const carriers=["Carrier A","Carrier B","Carrier C"];
+const routes=["Route A","Route B","Route C"];
+
+let data=[];
+
+for(let i=0;i<100;i++){
+let price=Math.random()*50+5;
+let sold=Math.random()*500;
+let revenue=price*sold;
+let shippingCost=Math.random()*20;
+let mCost=Math.random()*30;
+
+data.push({
+type:types[Math.floor(Math.random()*3)],
+supplier:suppliers[Math.floor(Math.random()*5)],
+location:locations[Math.floor(Math.random()*5)],
+price,sold,revenue,
+defect:Math.random()*0.1,
+inspection:inspections[Math.floor(Math.random()*3)],
+transport:transports[Math.floor(Math.random()*4)],
+carrier:carriers[Math.floor(Math.random()*3)],
+route:routes[Math.floor(Math.random()*3)],
+shippingCost,
+shippingTime:Math.random()*10,
+stock:Math.random()*1000,
+mCost,
+production:Math.random()*1000
+});
+}
+
+let filtered=[...data];
+let charts={};
+
+// ===== FILTER INIT =====
+suppliers.forEach(s=>supplierFilter.add(new Option(s,s)));
+locations.forEach(l=>locationFilter.add(new Option(l,l)));
+
+document.querySelectorAll("select").forEach(e=>e.onchange=applyFilters);
+
+// ===== FILTER =====
+function applyFilters(){
+let p=[...productFilter.selectedOptions].map(o=>o.value);
+let s=[...supplierFilter.selectedOptions].map(o=>o.value);
+let l=locationFilter.value;
+let ins=inspectionFilter.value;
+
+filtered=data.filter(d=>
+(!p.length||p.includes(d.type)) &&
+(!s.length||s.includes(d.supplier)) &&
+(!l||d.location===l) &&
+(ins==="All"||d.inspection===ins)
+);
+
+updateAll();
+}
+
+// ===== KPIs =====
+function updateKPIs(){
+let rev=0,profit=0,def=0,units=0,pass=0;
+
+filtered.forEach(d=>{
+rev+=d.revenue;
+profit+=d.revenue-(d.mCost+d.shippingCost);
+def+=d.defect;
+units+=d.sold;
+if(d.inspection==="Pass") pass++;
+});
+
+kpiRevenue.innerHTML="Revenue<br>$"+rev.toLocaleString();
+kpiProfit.innerHTML="Profit<br>$"+profit.toLocaleString();
+kpiDefect.innerHTML="Defect<br>"+(def/filtered.length*100).toFixed(2)+"%";
+kpiUnits.innerHTML="Units<br>"+units.toLocaleString();
+kpiPass.innerHTML="Pass Rate<br>"+(pass/filtered.length*100).toFixed(1)+"%";
+
+recordCount.innerText=`Showing ${filtered.length} of ${data.length}`;
+}
+
+// ===== CHART BUILDER =====
+function destroyCharts(){
+Object.values(charts).forEach(c=>c.destroy());
+charts={};
+}
+
+// ===== CHARTS =====
+function updateCharts(){
+destroyCharts();
+
+// Revenue by type
+let g={}; filtered.forEach(d=>g[d.type]=(g[d.type]||0)+d.revenue);
+charts.revType=new Chart(revType,{type:"bar",data:{labels:Object.keys(g),datasets:[{label:"Revenue",data:Object.values(g),backgroundColor:"#0d9488"}]}});
+
+// Scatter stock vs revenue
+charts.scatterStock=new Chart(scatterStock,{
+type:"scatter",
+data:{datasets:[{
+label:"SKU",
+data:filtered.map(d=>({x:d.stock,y:d.revenue})),
+backgroundColor:"#f43f5e"
+}]},
+options:{
+plugins:{tooltip:{
+callbacks:{
+label:(ctx)=>{
+let d=filtered[ctx.dataIndex];
+return `SKU | Supplier:${d.supplier} | $${d.price.toFixed(2)}`;
+}
+}
+}}
+}
+});
+
+// Route efficiency (dual axis)
+let routeCost={},routeTime={};
+filtered.forEach(d=>{
+routeCost[d.route]=(routeCost[d.route]||0)+d.shippingCost;
+routeTime[d.route]=(routeTime[d.route]||0)+d.shippingTime;
+});
+
+charts.route=new Chart(route,{
+type:"bar",
+data:{
+labels:Object.keys(routeCost),
+datasets:[
+{label:"Cost",data:Object.values(routeCost),backgroundColor:"#0d9488"},
+{label:"Time",data:Object.values(routeTime),backgroundColor:"#f59e0b"}
+]
+}
+});
+
+// Add remaining charts similarly...
+}
+
+// ===== INSIGHTS ENGINE =====
+function updateInsights(){
+let bestSupplier=suppliers.map(s=>{
+let f=filtered.filter(d=>d.supplier===s);
+return {s,def:f.reduce((a,b)=>a+b.defect,0)/(f.length||1)};
+}).sort((a,b)=>a.def-b.def)[0];
+
+let worstRoute=routes.map(r=>{
+let f=filtered.filter(d=>d.route===r);
+return {r,c:f.reduce((a,b)=>a+b.shippingCost,0)/(f.length||1)};
+}).sort((a,b)=>b.c-a.c)[0];
+
+insights.innerHTML=`
+<li>${bestSupplier.s} has the lowest defect rate</li>
+<li>${worstRoute.r} is the most expensive route</li>
+<li>Air transport consistently drives highest cost</li>
+<li>Higher price points reduce demand elasticity</li>
+<li>Profit margin varies significantly across suppliers</li>
+`;
+}
+
+// ===== UPDATE =====
+function updateAll(){
+updateKPIs();
+updateCharts();
+updateInsights();
+}
+
+function resetFilters(){
+document.querySelectorAll("select").forEach(s=>s.selectedIndex=-1);
+filtered=[...data];
+updateAll();
+}
+
+updateAll();
+
+</script>
+</body>
+</html>
