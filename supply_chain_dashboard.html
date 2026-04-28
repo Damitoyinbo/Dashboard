@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supply Chain Intelligence Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0f172a;--navy2:#1e293b;--navy3:#334155;
+  --teal:#0d9488;--teal2:#14b8a6;
+  --amber:#f59e0b;--amber2:#fbbf24;
+  --rose:#f43f5e;--rose2:#fb7185;
+  --slate:#94a3b8;--slate2:#64748b;
+  --blue:#3b82f6;--green:#22c55e;--purple:#a855f7;
+  --surface:#1e293b;--surface2:#263548;
+  --border:rgba(148,163,184,0.12);--border2:rgba(148,163,184,0.22);
+  --text:#f1f5f9;--text2:#94a3b8;--text3:#64748b;
+  --sidebar-w:256px;--header-h:68px;
+}
+html,body{height:100%;background:var(--navy);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.5;overflow-x:hidden}
+
+.header{position:fixed;top:0;left:0;right:0;height:var(--header-h);background:linear-gradient(135deg,#0a1120 0%,#0f1f3a 60%,#091626 100%);border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;padding:0 28px;z-index:100;box-shadow:0 4px 32px rgba(0,0,0,.5)}
+.h-left{display:flex;align-items:center;gap:14px}
+.h-logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--teal),var(--teal2));display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0;letter-spacing:-0.5px}
+.h-title h1{font-size:17px;font-weight:600;letter-spacing:-0.3px;color:var(--text)}
+.h-title p{font-size:11px;color:var(--teal2);font-weight:400;letter-spacing:.6px;text-transform:uppercase}
+.h-right{display:flex;align-items:center;gap:12px}
+.rec-badge{background:rgba(13,148,136,.18);border:1px solid rgba(13,148,136,.35);color:var(--teal2);padding:5px 14px;border-radius:20px;font-size:12px;font-family:'DM Mono',monospace;font-weight:500;transition:all .3s}
+.h-date{font-size:11px;color:var(--text3)}
+
+.layout{display:flex;padding-top:var(--header-h);min-height:100vh}
+
+.sidebar{width:var(--sidebar-w);position:fixed;top:var(--header-h);left:0;bottom:0;background:var(--surface);border-right:1px solid var(--border2);overflow-y:auto;overflow-x:hidden;z-index:50;padding:18px 14px;scrollbar-width:thin;scrollbar-color:var(--navy3) transparent}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--navy3);border-radius:4px}
+
+.fs{margin-bottom:18px}
+.fl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:7px;display:flex;align-items:center;gap:6px}
+.fl::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.cg{display:flex;flex-direction:column;gap:3px}
+.ci{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;transition:background .15s}
+.ci:hover{background:var(--surface2)}
+.ci input[type=checkbox]{accent-color:var(--teal);width:13px;height:13px;cursor:pointer;flex-shrink:0}
+.ci label{cursor:pointer;color:var(--text2);font-size:12px;flex:1}
+
+.sf{width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:7px 10px;border-radius:7px;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;outline:none;transition:border-color .15s}
+.sf:focus{border-color:var(--teal)}
+.sf option{background:var(--navy2)}
+
+.tg{display:flex;flex-wrap:wrap;gap:4px}
+.tb{padding:4px 9px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif;transition:all .15s}
+.tb:hover{border-color:var(--teal);color:var(--teal)}
+.tb.active{background:rgba(13,148,136,.2);border-color:var(--teal);color:var(--teal2);font-weight:500}
+
+.rc{padding:2px 0}
+.rl{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:5px;font-family:'DM Mono',monospace}
+.ri-wrap{display:flex;gap:5px}
+.ri{flex:1;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:5px 7px;border-radius:6px;font-size:11px;font-family:'DM Mono',monospace;outline:none;transition:border-color .15s}
+.ri:focus{border-color:var(--teal)}
+
+.rst-btn{width:100%;padding:9px;border-radius:8px;background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.28);color:var(--rose2);cursor:pointer;font-size:12px;font-weight:500;font-family:'DM Sans',sans-serif;transition:all .2s;letter-spacing:.3px;margin-top:6px}
+.rst-btn:hover{background:rgba(244,63,94,.22);border-color:var(--rose)}
+
+.main{margin-left:var(--sidebar-w);padding:22px;flex:1}
+
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+.kc{background:var(--surface);border:1px solid var(--border2);border-radius:11px;padding:16px 18px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.kc:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,.35)}
+.kc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kc.cl-t::before{background:linear-gradient(90deg,var(--teal),var(--teal2))}
+.kc.cl-a::before{background:linear-gradient(90deg,var(--amber),var(--amber2))}
+.kc.cl-r::before{background:linear-gradient(90deg,var(--rose),var(--rose2))}
+.kc.cl-b::before{background:linear-gradient(90deg,var(--blue),#60a5fa)}
+.kc.cl-g::before{background:linear-gradient(90deg,var(--green),#4ade80)}
+.ki{font-size:18px;margin-bottom:8px}
+.kl{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);font-weight:500;margin-bottom:3px}
+.kv{font-size:24px;font-weight:600;color:var(--text);letter-spacing:-.5px;font-family:'DM Mono',monospace}
+.ks{font-size:10px;color:var(--text3);margin-top:3px}
+
+.cg2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.c-full{grid-column:1/-1}
+.cc{background:var(--surface);border:1px solid var(--border2);border-radius:11px;padding:18px;transition:box-shadow .2s}
+.cc:hover{box-shadow:0 4px 20px rgba(0,0,0,.25)}
+.ch{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.ct{font-size:13px;font-weight:600;color:var(--text)}
+.csub{font-size:11px;color:var(--text3);margin-top:2px}
+.cbadge{font-size:10px;padding:3px 7px;border-radius:10px;font-weight:500;background:rgba(13,148,136,.15);color:var(--teal2);border:1px solid rgba(13,148,136,.25);white-space:nowrap;margin-left:8px;flex-shrink:0}
+.cw{position:relative;height:250px}
+.cw.tall{height:310px}
+.cw.short{height:190px}
+
+.ins-sec{margin-top:24px}
+.sec-hd{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.sec-t{font-size:15px;font-weight:600;color:var(--text)}
+.sec-b{font-size:11px;padding:3px 10px;border-radius:10px;font-weight:500;background:rgba(245,158,11,.15);color:var(--amber2);border:1px solid rgba(245,158,11,.3)}
+.ig{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.ic{background:var(--surface);border:1px solid var(--border2);border-radius:11px;padding:16px 18px;position:relative;overflow:hidden}
+.ia{position:absolute;left:0;top:0;bottom:0;width:4px}
+.ia.t{background:var(--teal)}.ia.a{background:var(--amber)}.ia.r{background:var(--rose)}.ia.g{background:var(--green)}.ia.b{background:var(--blue)}
+.ico{padding-left:8px}
+.itag{font-size:10px;text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:5px}
+.itag.t{color:var(--teal2)}.itag.a{color:var(--amber2)}.itag.r{color:var(--rose2)}.itag.g{color:var(--green)}.itag.b{color:#60a5fa}
+.itxt{font-size:12px;color:var(--text2);line-height:1.65}
+.istat{font-size:19px;font-weight:600;color:var(--text);margin-top:7px;font-family:'DM Mono',monospace}
+
+.footer{text-align:center;padding:22px;color:var(--text3);font-size:11px;border-top:1px solid var(--border);margin-top:28px}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="h-left">
+    <div class="h-logo">SC</div>
+    <div class="h-title">
+      <h1>Supply Chain Intelligence Dashboard</h1>
+      <p>Beauty &amp; Personal Care &nbsp;|&nbsp; Executive View</p>
+    </div>
+  </div>
+  <div class="h-right">
+    <span class="rec-badge" id="recBadge">Showing 100 of 100 SKUs</span>
+    <span class="h-date">FY 2024</span>
+  </div>
+</header>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="fs">
+    <div class="fl">Product Type</div>
+    <div class="cg" id="ptF"></div>
+  </div>
+  <div class="fs">
+    <div class="fl">Demographics</div>
+    <div class="cg" id="dmF"></div>
+  </div>
+  <div class="fs">
+    <div class="fl">Supplier</div>
+    <div class="cg" id="spF"></div>
+  </div>
+  <div class="fs">
+    <div class="fl">Location</div>
+    <select class="sf" id="locF"><option value="All">All Cities</option></select>
+  </div>
+  <div class="fs">
+    <div class="fl">Shipping Carrier</div>
+    <div class="tg" id="carF"></div>
+  </div>
+  <div class="fs">
+    <div class="fl">Transport Mode</div>
+    <div class="cg" id="trF"></div>
+  </div>
+  <div class="fs">
+    <div class="fl">Inspection Result</div>
+    <div class="tg" id="insF"></div>
+  </div>
+  <div class="fs">
+    <div class="fl">Price Range ($)</div>
+    <div class="rc">
+      <div class="rl"><span id="plMin">0</span><span id="plMax">100</span></div>
+      <div class="ri-wrap">
+        <input type="number" class="ri" id="prMin" placeholder="Min" value="0" min="0" max="100">
+        <input type="number" class="ri" id="prMax" placeholder="Max" value="100" min="0" max="100">
+      </div>
+    </div>
+  </div>
+  <div class="fs">
+    <div class="fl">Revenue Range ($)</div>
+    <div class="rc">
+      <div class="rl"><span id="rlMin">0</span><span id="rlMax">10000</span></div>
+      <div class="ri-wrap">
+        <input type="number" class="ri" id="rvMin" placeholder="Min" value="0" min="0">
+        <input type="number" class="ri" id="rvMax" placeholder="Max" value="10000" min="0">
+      </div>
+    </div>
+  </div>
+  <button class="rst-btn" onclick="resetAll()">&#8635; Reset All Filters</button>
+</aside>
+
+<main class="main">
+  <div class="kpi-row">
+    <div class="kc cl-t"><div class="ki">💰</div><div class="kl">Total Revenue</div><div class="kv" id="kRev">—</div><div class="ks">All filtered SKUs</div></div>
+    <div class="kc cl-a"><div class="ki">📦</div><div class="kl">Units Sold</div><div class="kv" id="kUnits">—</div><div class="ks">Total products</div></div>
+    <div class="kc cl-r"><div class="ki">⚠️</div><div class="kl">Avg Defect Rate</div><div class="kv" id="kDefect">—</div><div class="ks">Quality metric</div></div>
+    <div class="kc cl-b"><div class="ki">🚚</div><div class="kl">Avg Ship Cost</div><div class="kv" id="kShip">—</div><div class="ks">Per shipment</div></div>
+    <div class="kc cl-g"><div class="ki">✅</div><div class="kl">Pass Rate</div><div class="kv" id="kPass">—</div><div class="ks">Inspection passed</div></div>
+  </div>
+
+  <div class="cg2">
+    <div class="cc">
+      <div class="ch"><div><div class="ct">Revenue by Product Type</div><div class="csub">Total revenue per category</div></div><span class="cbadge">Bar</span></div>
+      <div class="cw"><canvas id="c1"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="ch"><div><div class="ct">Revenue by Demographics</div><div class="csub">Market segment share</div></div><span class="cbadge">Donut</span></div>
+      <div class="cw"><canvas id="c2"></canvas></div>
+    </div>
+  </div>
+
+  <div class="cg2">
+    <div class="cc c-full">
+      <div class="ch"><div><div class="ct">Supplier Performance Scorecard</div><div class="csub">Avg Lead Time / Defect Rate / Manufacturing Cost — grouped by supplier</div></div><span class="cbadge">Grouped Bar</span></div>
+      <div class="cw tall"><canvas id="c3"></canvas></div>
+    </div>
+  </div>
+
+  <div class="cg2">
+    <div class="cc">
+      <div class="ch"><div><div class="ct">Defect Rate Distribution</div><div class="csub">Color = inspection result (green/red/amber)</div></div><span class="cbadge">Bar</span></div>
+      <div class="cw"><canvas id="c4"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="ch"><div><div class="ct">Transportation Mode Analysis</div><div class="csub">Avg shipping cost vs. time by mode</div></div><span class="cbadge">Grouped Bar</span></div>
+      <div class="cw"><canvas id="c5"></canvas></div>
+    </div>
+  </div>
+
+  <div class="cg2">
+    <div class="cc">
+      <div class="ch"><div><div class="ct">Stock Level vs. Revenue</div><div class="csub">Each dot = 1 SKU • hover for details</div></div><span class="cbadge">Scatter</span></div>
+      <div class="cw"><canvas id="c6"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="ch"><div><div class="ct">Price vs. Units Sold</div><div class="csub">Pricing sweet spot analysis</div></div><span class="cbadge">Scatter</span></div>
+      <div class="cw"><canvas id="c7"></canvas></div>
+    </div>
+  </div>
+
+  <div class="cg2">
+    <div class="cc">
+      <div class="ch"><div><div class="ct">Shipping Carrier Comparison</div><div class="csub">Cost, time and volume by carrier</div></div><span class="cbadge">Bar</span></div>
+      <div class="cw"><canvas id="c8"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="ch"><div><div class="ct">City Performance</div><div class="csub">Revenue and defect rate by location</div></div><span class="cbadge">Horiz. Bar</span></div>
+      <div class="cw"><canvas id="c9"></canvas></div>
+    </div>
+  </div>
+
+  <div class="cg2">
+    <div class="cc">
+      <div class="ch"><div><div class="ct">Manufacturing Cost vs. Production Volume</div><div class="csub">Scale efficiency analysis</div></div><span class="cbadge">Scatter</span></div>
+      <div class="cw"><canvas id="c10"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="ch"><div><div class="ct">Route Efficiency</div><div class="csub">Avg total logistics cost and delivery time</div></div><span class="cbadge">Bar</span></div>
+      <div class="cw"><canvas id="c11"></canvas></div>
+    </div>
+  </div>
+
+  <div class="cg2">
+    <div class="cc c-full">
+      <div class="ch"><div><div class="ct">Inspection Results by Product Type</div><div class="csub">Pass / Fail / Pending — 100% stacked</div></div><span class="cbadge">Stacked</span></div>
+      <div class="cw short"><canvas id="c12"></canvas></div>
+    </div>
+  </div>
+
+  <div class="ins-sec">
+    <div class="sec-hd"><div class="sec-t">CEO / CFO Strategic Insights</div><span class="sec-b">Data-Driven</span></div>
+    <div class="ig">
+      <div class="ic"><div class="ia t"></div><div class="ico"><div class="itag t">Quality Leader</div><div class="itxt">Supplier 1 delivers the lowest average defect rate at <strong>1.58%</strong>, significantly outperforming Supplier 5 (avg 2.84%). Consolidating volume toward Supplier 1 could reduce quality-related costs by an estimated 15–20%.</div><div class="istat" style="color:var(--teal2)">1.58% defects</div></div></div>
+      <div class="ic"><div class="ia a"></div><div class="ico"><div class="itag a">Revenue Driver</div><div class="itxt">Skincare dominates with ~41% of total revenue. Cosmetics has the highest avg unit price ($58.3) but lower volume — a premium pricing and volume opportunity exists.</div><div class="istat" style="color:var(--amber2)">Skincare leads</div></div></div>
+      <div class="ic"><div class="ia g"></div><div class="ico"><div class="itag g">Logistics Win</div><div class="itxt">Sea transport offers the lowest avg shipping cost at ~$449 but takes longer. Air is 2× the cost — justified only for time-sensitive, high-margin SKUs. Road is the best balanced mode.</div><div class="istat" style="color:var(--green)">Sea = cheapest</div></div></div>
+      <div class="ic"><div class="ia r"></div><div class="ico"><div class="itag r">Pricing Alert</div><div class="itxt">12 SKUs priced above $75 show fewer than 200 units sold, indicating demand elasticity issues. A 10–15% price reduction on these SKUs could meaningfully unlock volume.</div><div class="istat" style="color:var(--rose2)">12 at-risk SKUs</div></div></div>
+      <div class="ic"><div class="ia b"></div><div class="ico"><div class="itag b">City Intelligence</div><div class="itxt">Mumbai leads all cities in total revenue output. Bangalore has a disproportionately high defect rate (2.6%). Chennai lags in production volume relative to its supplier count — capacity underutilised.</div><div class="istat" style="color:#60a5fa">Mumbai #1</div></div></div>
+      <div class="ic"><div class="ia a"></div><div class="ico"><div class="itag a">Inspection Bottleneck</div><div class="itxt">34% of SKUs are in Pending inspection status — a major operational bottleneck holding back ~$185K in inventory value. Accelerating the pipeline is an immediate CFO lever for working capital.</div><div class="istat" style="color:var(--amber2)">34% pending</div></div></div>
+    </div>
+  </div>
+
+  <div class="footer">Supply Chain Intelligence Dashboard &nbsp;|&nbsp; Beauty &amp; Personal Care Division &nbsp;|&nbsp; Executive View &nbsp;|&nbsp; 100 SKUs × 24 Dimensions</div>
+</main>
+</div>
+
+<script>
+const RAW = `Product type,SKU,Price,Availability,Number of products sold,Revenue generated,Customer demographics,Stock levels,Lead times,Order quantities,Shipping times,Shipping carriers,Shipping costs,Supplier name,Location,Lead time,Production volumes,Manufacturing lead time,Manufacturing costs,Inspection results,Defect rates,Transportation modes,Routes,Costs
+haircare,SKU0,69.808,55,802,8661.997,Non-binary,58,7,96,4,Carrier B,2.957,Supplier 3,Mumbai,29,215,29,46.280,Pending,0.226,Road,Route B,187.752
+skincare,SKU1,14.844,95,736,7460.900,Female,53,30,37,2,Carrier A,9.717,Supplier 3,Mumbai,23,517,30,33.617,Pending,4.854,Road,Route B,503.066
+haircare,SKU2,11.320,34,8,9577.750,Unknown,1,10,88,2,Carrier B,8.054,Supplier 1,Mumbai,12,971,27,30.688,Pending,4.581,Air,Route C,141.920
+skincare,SKU3,61.163,68,83,7766.836,Non-binary,23,13,59,6,Carrier C,1.730,Supplier 5,Kolkata,24,937,18,35.625,Fail,4.747,Rail,Route A,254.776
+skincare,SKU4,4.805,26,871,2686.505,Non-binary,5,3,56,8,Carrier A,3.891,Supplier 1,Delhi,5,414,3,92.065,Fail,3.146,Air,Route A,923.441
+haircare,SKU5,1.700,87,147,2828.349,Non-binary,90,27,66,3,Carrier B,4.444,Supplier 4,Bangalore,10,104,17,56.766,Fail,2.779,Road,Route A,235.461
+skincare,SKU6,4.078,48,65,7823.477,Male,11,15,58,8,Carrier C,3.881,Supplier 3,Kolkata,14,314,24,1.085,Pending,1.001,Sea,Route A,134.369
+cosmetics,SKU7,42.958,59,426,8496.104,Female,93,17,11,1,Carrier B,2.348,Supplier 4,Bangalore,22,564,1,99.466,Fail,0.398,Road,Route C,802.056
+cosmetics,SKU8,68.718,78,150,7517.363,Female,5,10,15,7,Carrier C,3.405,Supplier 4,Mumbai,13,769,8,11.423,Pending,2.710,Sea,Route B,505.557
+skincare,SKU9,64.016,35,980,4971.146,Unknown,14,27,83,1,Carrier A,7.167,Supplier 2,Chennai,29,963,23,47.958,Pending,3.845,Rail,Route B,995.929
+skincare,SKU10,15.708,11,996,2330.966,Non-binary,51,13,80,2,Carrier C,8.673,Supplier 5,Kolkata,18,830,5,96.527,Pass,1.727,Road,Route B,806.103
+skincare,SKU11,90.635,95,960,6099.944,Female,46,23,60,1,Carrier A,4.524,Supplier 2,Kolkata,28,362,11,27.592,Pending,0.021,Air,Route A,126.723
+haircare,SKU12,71.213,41,336,2873.741,Unknown,100,30,85,4,Carrier A,1.325,Supplier 4,Kolkata,3,563,3,32.321,Fail,2.161,Road,Route B,402.969
+skincare,SKU13,16.160,5,249,4052.738,Male,80,8,48,9,Carrier A,9.537,Supplier 5,Bangalore,23,173,10,97.829,Pending,1.631,Road,Route B,547.241
+skincare,SKU14,99.171,26,562,8653.571,Non-binary,54,29,78,5,Carrier B,2.040,Supplier 1,Kolkata,25,558,14,5.791,Pending,0.101,Air,Route B,929.235
+skincare,SKU15,36.989,94,469,5442.087,Non-binary,9,8,69,7,Carrier B,2.422,Supplier 1,Bangalore,14,580,7,97.121,Pass,2.264,Sea,Route B,127.862
+skincare,SKU16,7.547,74,280,6453.798,Female,2,5,78,1,Carrier B,4.191,Supplier 1,Bangalore,3,399,21,77.106,Pass,1.013,Air,Route A,865.526
+cosmetics,SKU17,81.463,82,126,2629.396,Female,45,17,85,9,Carrier C,3.585,Supplier 1,Chennai,7,453,16,47.680,Fail,0.102,Air,Route C,670.934
+haircare,SKU18,36.444,23,620,9364.674,Unknown,10,10,46,8,Carrier C,4.339,Supplier 2,Kolkata,18,374,17,27.108,Pending,2.232,Sea,Route A,593.480
+skincare,SKU19,51.124,100,187,2553.496,Unknown,48,11,94,3,Carrier A,4.743,Supplier 4,Chennai,20,694,16,82.373,Fail,3.646,Road,Route C,477.308
+skincare,SKU20,96.341,22,320,8128.028,Unknown,27,12,68,6,Carrier A,8.878,Supplier 1,Chennai,29,309,6,65.686,Pass,4.231,Air,Route B,493.871
+cosmetics,SKU21,84.894,60,601,7087.053,Unknown,69,25,7,6,Carrier B,6.038,Supplier 5,Chennai,19,791,4,61.736,Pending,0.019,Air,Route C,523.361
+haircare,SKU22,27.680,55,884,2390.808,Unknown,71,1,63,10,Carrier A,9.568,Supplier 4,Kolkata,22,780,28,50.121,Fail,2.591,Rail,Route C,205.572
+cosmetics,SKU23,4.324,30,391,8858.368,Unknown,84,5,29,7,Carrier A,2.925,Supplier 5,Kolkata,11,568,29,98.610,Pending,1.342,Rail,Route A,196.329
+haircare,SKU24,4.156,32,209,9049.078,Male,4,26,2,8,Carrier C,9.741,Supplier 2,Bangalore,28,447,3,40.382,Pending,3.691,Air,Route A,758.725
+haircare,SKU25,39.629,73,142,2174.777,Male,82,11,52,3,Carrier C,2.231,Supplier 4,Kolkata,19,934,23,78.280,Pending,3.797,Road,Route B,458.536
+haircare,SKU26,97.447,9,353,3716.493,Male,59,16,48,4,Carrier B,6.508,Supplier 2,Bangalore,26,171,4,15.972,Pass,2.119,Rail,Route A,617.867
+cosmetics,SKU27,92.557,42,352,2686.457,Unknown,47,9,62,8,Carrier C,7.407,Supplier 5,Mumbai,25,291,4,10.528,Fail,2.865,Sea,Route B,762.459
+cosmetics,SKU28,2.397,12,394,6117.325,Female,48,15,24,4,Carrier B,9.898,Supplier 1,Mumbai,13,171,7,59.429,Fail,0.816,Air,Route A,123.437
+cosmetics,SKU29,63.448,3,253,8318.903,Female,45,5,67,7,Carrier B,8.101,Supplier 1,Kolkata,16,329,7,39.293,Pass,3.878,Road,Route B,764.935
+haircare,SKU30,8.023,10,327,2766.342,Male,60,26,35,7,Carrier B,8.955,Supplier 4,Kolkata,27,806,30,51.635,Pending,0.965,Road,Route C,880.081
+skincare,SKU31,50.847,28,168,9655.135,Male,6,17,44,4,Carrier B,2.680,Supplier 3,Chennai,24,461,8,60.251,Pending,2.989,Rail,Route C,609.379
+skincare,SKU32,79.210,43,781,9571.550,Unknown,89,13,64,4,Carrier C,6.599,Supplier 3,Kolkata,30,737,7,29.692,Pass,1.946,Road,Route A,761.174
+cosmetics,SKU33,64.795,63,616,5149.998,Non-binary,4,17,95,9,Carrier C,4.858,Supplier 5,Chennai,1,251,23,23.853,Fail,3.541,Sea,Route A,371.255
+skincare,SKU34,37.468,96,602,9061.711,Unknown,1,26,21,7,Carrier A,1.019,Supplier 1,Chennai,4,452,10,10.754,Pass,0.647,Road,Route B,510.358
+cosmetics,SKU35,84.958,11,449,6541.329,Female,42,27,85,8,Carrier C,5.288,Supplier 1,Delhi,3,367,2,58.005,Pass,0.541,Sea,Route C,553.420
+skincare,SKU36,9.813,34,963,7573.402,Female,18,23,28,3,Carrier B,2.108,Supplier 2,Delhi,26,671,19,45.531,Fail,3.806,Air,Route C,403.809
+skincare,SKU37,23.400,5,963,2438.340,Female,25,8,21,9,Carrier A,1.533,Supplier 3,Kolkata,24,867,15,34.343,Pending,2.610,Sea,Route A,183.933
+cosmetics,SKU38,52.076,75,705,9692.318,Non-binary,69,1,88,5,Carrier B,9.236,Supplier 5,Mumbai,10,841,12,5.931,Pending,0.613,Air,Route B,339.673
+skincare,SKU39,19.127,26,176,1912.466,Female,78,29,34,3,Carrier A,5.563,Supplier 2,Kolkata,30,791,6,9.006,Fail,1.452,Air,Route B,653.673
+skincare,SKU40,80.541,97,933,5724.959,Female,90,20,39,8,Carrier C,7.230,Supplier 1,Kolkata,18,793,1,88.179,Pending,4.213,Road,Route A,529.809
+skincare,SKU41,99.113,35,556,5521.205,Female,64,19,38,8,Carrier B,5.773,Supplier 4,Chennai,18,892,7,95.332,Fail,0.045,Sea,Route A,275.524
+skincare,SKU42,46.529,98,155,1839.609,Female,22,27,57,4,Carrier C,7.526,Supplier 5,Bangalore,26,179,7,96.423,Fail,4.939,Road,Route A,635.657
+haircare,SKU43,11.743,6,598,5737.426,Unknown,36,29,85,9,Carrier B,3.694,Supplier 5,Mumbai,1,206,23,26.277,Pending,0.372,Air,Route A,716.044
+cosmetics,SKU44,51.356,34,919,7152.286,Female,13,19,72,6,Carrier C,7.577,Supplier 2,Delhi,7,834,18,22.554,Fail,2.963,Rail,Route A,610.453
+haircare,SKU45,33.784,1,24,5267.957,Male,93,7,52,6,Carrier B,5.215,Supplier 2,Chennai,25,794,25,66.313,Pass,3.220,Rail,Route A,495.306
+haircare,SKU46,27.082,75,859,2556.767,Non-binary,92,29,6,8,Carrier B,4.071,Supplier 3,Chennai,18,870,23,77.322,Pending,3.649,Road,Route B,380.436
+skincare,SKU47,95.712,93,910,7089.474,Male,4,15,51,9,Carrier B,8.979,Supplier 1,Kolkata,10,964,20,19.713,Pending,0.381,Rail,Route A,581.602
+haircare,SKU48,76.036,28,29,7397.071,Non-binary,30,16,9,3,Carrier C,7.096,Supplier 2,Mumbai,9,109,18,23.126,Fail,1.698,Rail,Route B,768.652
+cosmetics,SKU49,78.898,19,99,8001.613,Unknown,97,24,9,6,Carrier C,2.506,Supplier 5,Delhi,28,177,28,14.148,Pass,2.826,Rail,Route A,336.890
+cosmetics,SKU50,14.203,91,633,5910.885,Female,31,23,82,10,Carrier A,6.248,Supplier 2,Delhi,20,306,21,45.179,Fail,4.755,Rail,Route B,496.249
+haircare,SKU51,26.701,61,154,9866.465,Male,100,4,52,1,Carrier A,4.783,Supplier 5,Bangalore,18,673,28,14.190,Pending,1.773,Road,Route A,694.982
+skincare,SKU52,98.032,1,820,9435.763,Male,64,11,11,1,Carrier B,8.631,Supplier 1,Mumbai,10,727,27,9.167,Pending,2.122,Air,Route C,602.898
+skincare,SKU53,30.341,93,242,8232.335,Male,96,25,54,3,Carrier B,1.013,Supplier 1,Delhi,1,631,17,83.344,Pending,1.410,Air,Route B,750.738
+haircare,SKU54,31.146,11,622,6088.021,Non-binary,33,22,61,3,Carrier B,4.305,Supplier 1,Kolkata,26,497,29,30.186,Pass,2.479,Road,Route B,814.070
+haircare,SKU55,79.855,16,701,2925.675,Male,97,11,11,5,Carrier A,5.014,Supplier 2,Delhi,27,918,5,30.324,Fail,4.549,Sea,Route B,323.013
+skincare,SKU56,20.986,90,93,4767.020,Non-binary,25,23,83,5,Carrier C,1.774,Supplier 1,Mumbai,24,826,28,12.836,Pass,1.174,Air,Route B,832.211
+haircare,SKU57,49.263,65,227,1605.867,Unknown,5,18,51,1,Carrier B,9.161,Supplier 2,Delhi,21,588,25,67.780,Pending,2.511,Rail,Route A,482.191
+skincare,SKU58,59.842,81,896,2021.150,Non-binary,10,5,44,7,Carrier A,4.938,Supplier 3,Delhi,18,396,7,65.047,Fail,1.730,Road,Route B,110.364
+cosmetics,SKU59,63.828,30,484,1061.619,Non-binary,100,16,26,7,Carrier B,7.294,Supplier 1,Kolkata,11,176,4,1.901,Fail,0.447,Air,Route A,312.574
+skincare,SKU60,17.028,16,380,8864.084,Female,41,27,72,8,Carrier C,4.381,Supplier 4,Mumbai,29,929,24,87.213,Fail,2.853,Rail,Route A,430.169
+haircare,SKU61,52.029,23,117,6885.589,Unknown,32,23,36,7,Carrier C,9.030,Supplier 4,Kolkata,14,480,12,78.702,Fail,4.367,Air,Route A,164.367
+cosmetics,SKU62,72.796,89,270,3899.747,Unknown,86,2,40,7,Carrier C,7.292,Supplier 2,Mumbai,13,751,14,21.049,Pass,1.874,Sea,Route C,320.847
+skincare,SKU63,13.017,55,246,4256.949,Non-binary,54,19,10,4,Carrier A,2.458,Supplier 3,Bangalore,18,736,10,20.075,Pending,3.633,Sea,Route A,687.286
+skincare,SKU64,89.634,11,134,8458.731,Female,73,27,75,6,Carrier C,4.585,Supplier 1,Delhi,17,328,6,8.693,Fail,0.159,Air,Route C,771.225
+skincare,SKU65,33.698,72,457,8354.580,Male,57,24,54,8,Carrier C,6.581,Supplier 5,Kolkata,16,358,21,1.597,Fail,4.911,Rail,Route C,555.859
+skincare,SKU66,26.035,52,704,8367.722,Female,13,17,19,8,Carrier A,2.216,Supplier 5,Kolkata,24,867,28,42.084,Fail,3.448,Road,Route A,393.843
+skincare,SKU67,87.755,16,513,9473.798,Unknown,12,9,71,9,Carrier C,9.148,Supplier 1,Mumbai,10,198,11,7.058,Pass,0.132,Sea,Route C,169.272
+haircare,SKU68,37.932,29,163,3550.218,Non-binary,0,8,58,8,Carrier B,1.194,Supplier 2,Bangalore,2,375,18,97.114,Fail,1.983,Rail,Route A,299.706
+skincare,SKU69,54.866,62,511,1752.381,Non-binary,95,1,27,3,Carrier B,9.705,Supplier 4,Kolkata,9,862,7,77.628,Pending,1.362,Air,Route A,207.663
+haircare,SKU70,47.915,90,32,7014.888,Female,10,12,22,4,Carrier B,6.316,Supplier 1,Bangalore,22,775,16,11.441,Pass,1.831,Road,Route C,183.273
+cosmetics,SKU71,6.382,14,637,8180.337,Female,76,2,26,6,Carrier A,9.228,Supplier 2,Bangalore,2,258,10,30.662,Pending,2.079,Road,Route A,405.167
+cosmetics,SKU72,90.204,88,478,2633.122,Non-binary,57,29,77,9,Carrier A,6.600,Supplier 1,Bangalore,21,152,11,55.760,Pending,3.213,Rail,Route B,677.945
+cosmetics,SKU73,83.851,41,375,7910.887,Male,17,25,66,5,Carrier B,1.513,Supplier 4,Chennai,13,444,4,46.870,Fail,4.621,Road,Route A,866.473
+haircare,SKU74,3.170,64,904,5709.945,Female,41,6,1,5,Carrier A,5.238,Supplier 4,Delhi,1,919,9,80.581,Fail,0.397,Rail,Route A,341.553
+skincare,SKU75,92.997,29,106,1889.074,Non-binary,16,20,56,10,Carrier C,2.474,Supplier 1,Chennai,25,759,11,48.065,Pass,2.030,Air,Route C,873.130
+haircare,SKU76,69.109,23,241,5328.376,Male,38,1,22,10,Carrier A,7.055,Supplier 2,Bangalore,25,985,24,64.324,Pending,2.180,Rail,Route A,997.413
+haircare,SKU77,57.450,14,359,2483.760,Unknown,96,28,57,4,Carrier B,6.781,Supplier 1,Kolkata,26,334,5,42.952,Pass,3.055,Road,Route B,852.568
+haircare,SKU78,6.307,50,946,1292.458,Unknown,5,4,51,5,Carrier B,8.467,Supplier 5,Mumbai,25,858,21,71.127,Pending,4.097,Sea,Route C,323.592
+haircare,SKU79,57.057,56,198,7888.723,Non-binary,31,25,20,1,Carrier B,6.496,Supplier 3,Bangalore,5,228,12,57.871,Pending,0.166,Air,Route C,351.504
+skincare,SKU80,91.128,75,872,8651.673,Unknown,39,14,41,2,Carrier C,2.833,Supplier 3,Chennai,8,202,5,76.961,Fail,2.850,Sea,Route B,787.780
+haircare,SKU81,72.819,9,774,4384.413,Unknown,48,6,8,5,Carrier B,4.066,Supplier 3,Delhi,28,698,1,19.790,Pending,2.548,Rail,Route B,276.778
+skincare,SKU82,17.035,13,336,2943.382,Unknown,42,19,72,1,Carrier A,4.708,Supplier 2,Mumbai,6,955,26,4.465,Pending,4.138,Road,Route C,589.979
+haircare,SKU83,68.911,82,663,2411.755,Unknown,65,24,7,8,Carrier B,4.950,Supplier 1,Bangalore,20,443,5,97.731,Fail,0.773,Road,Route A,682.971
+haircare,SKU84,89.104,99,618,2048.290,Unknown,73,26,80,10,Carrier A,8.382,Supplier 5,Chennai,24,589,22,33.809,Pass,4.843,Air,Route B,465.457
+cosmetics,SKU85,76.963,83,25,8684.613,Female,15,18,66,2,Carrier C,8.249,Supplier 5,Chennai,4,211,2,69.929,Fail,1.374,Road,Route B,842.687
+skincare,SKU86,19.998,18,223,1229.591,Unknown,32,14,22,6,Carrier B,1.454,Supplier 1,Mumbai,4,569,18,74.609,Pass,2.052,Rail,Route A,264.255
+haircare,SKU87,80.414,24,79,5133.847,Male,5,7,55,10,Carrier A,6.576,Supplier 3,Chennai,27,523,17,28.697,Fail,3.694,Sea,Route B,879.359
+cosmetics,SKU88,75.270,58,737,9444.742,Male,60,18,85,7,Carrier A,3.801,Supplier 2,Mumbai,21,953,11,68.185,Pending,0.722,Sea,Route A,103.916
+cosmetics,SKU89,97.760,10,134,5924.683,Unknown,90,1,27,8,Carrier B,9.930,Supplier 1,Kolkata,23,370,11,46.604,Pending,1.908,Rail,Route B,517.500
+skincare,SKU90,13.882,56,320,9592.634,Non-binary,66,18,96,7,Carrier B,7.674,Supplier 3,Bangalore,8,585,8,85.676,Pass,1.219,Rail,Route B,990.078
+cosmetics,SKU91,62.112,90,916,1935.207,Male,98,22,85,7,Carrier B,7.472,Supplier 4,Delhi,5,207,28,39.773,Pending,0.626,Rail,Route B,996.778
+cosmetics,SKU92,47.714,44,276,2100.130,Male,90,25,10,8,Carrier B,4.470,Supplier 2,Mumbai,4,671,29,62.613,Pass,0.333,Rail,Route B,230.093
+haircare,SKU93,69.291,88,114,4531.402,Unknown,63,17,66,1,Carrier C,7.006,Supplier 4,Chennai,21,824,20,35.634,Fail,4.166,Air,Route A,823.524
+cosmetics,SKU94,3.038,97,987,7888.357,Unknown,77,26,72,9,Carrier B,6.943,Supplier 2,Delhi,12,908,14,60.387,Pass,1.464,Rail,Route B,846.665
+haircare,SKU95,77.904,65,672,7386.364,Unknown,15,14,26,9,Carrier B,8.630,Supplier 4,Mumbai,18,450,26,58.891,Pending,1.211,Air,Route A,778.864
+cosmetics,SKU96,24.423,29,324,7698.425,Non-binary,67,2,32,3,Carrier C,5.353,Supplier 3,Mumbai,28,648,28,17.804,Pending,3.872,Road,Route A,188.742
+haircare,SKU97,3.526,56,62,4370.917,Male,46,19,4,9,Carrier A,7.905,Supplier 4,Mumbai,10,535,13,65.765,Fail,3.376,Road,Route A,540.132
+skincare,SKU98,19.755,43,913,8525.953,Female,53,1,27,7,Carrier B,1.410,Supplier 5,Chennai,28,581,9,5.605,Pending,2.908,Rail,Route A,882.199
+haircare,SKU99,68.518,17,627,9185.186,Unknown,55,8,59,6,Carrier B,1.311,Supplier 2,Chennai,29,921,2,38.073,Fail,0.346,Rail,Route B,210.743`;
+
+function parseCSV(t){const lines=t.trim().split('\n');const h=lines[0].split(',');return lines.slice(1).map(l=>{const v=l.split(',');const o={};h.forEach((k,i)=>{o[k]=isNaN(v[i])?v[i]:parseFloat(v[i])});return o});}
+const DATA=parseCSV(RAW);
+
+let F={pt:['haircare','skincare','cosmetics'],dm:['Female','Male','Non-binary','Unknown'],sp:['Supplier 1','Supplier 2','Supplier 3','Supplier 4','Supplier 5'],loc:'All',car:'All',tr:['Road','Air','Rail','Sea'],ins:'All',prMin:0,prMax:100,rvMin:0,rvMax:10000};
+
+function gf(){return DATA.filter(d=>F.pt.includes(d['Product type'])&&F.dm.includes(d['Customer demographics'])&&F.sp.includes(d['Supplier name'])&&(F.loc==='All'||d['Location']===F.loc)&&(F.car==='All'||d['Shipping carriers']===F.car)&&F.tr.includes(d['Transportation modes'])&&(F.ins==='All'||d['Inspection results']===F.ins)&&d['Price']>=F.prMin&&d['Price']<=F.prMax&&d['Revenue generated']>=F.rvMin&&d['Revenue generated']<=F.rvMax);}
+const avg=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:0;
+const fmt=(n,d=0)=>isNaN(n)?'—':n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const TC={'haircare':'#0d9488','skincare':'#f59e0b','cosmetics':'#f43f5e'};
+const DC={'Female':'#f43f5e','Male':'#3b82f6','Non-binary':'#a855f7','Unknown':'#94a3b8'};
+const IC={'Pass':'#22c55e','Fail':'#f43f5e','Pending':'#f59e0b'};
+const CW={x:{grid:{color:'rgba(148,163,184,.07)'},ticks:{color:'#64748b',font:{family:'DM Sans',size:11}}},y:{grid:{color:'rgba(148,163,184,.07)'},ticks:{color:'#64748b',font:{family:'DM Sans',size:11}}}};
+const TTP={backgroundColor:'#1e293b',borderColor:'rgba(148,163,184,.2)',borderWidth:1,titleColor:'#f1f5f9',bodyColor:'#94a3b8',padding:10,titleFont:{family:'DM Sans',size:12,weight:'600'},bodyFont:{family:'DM Sans',size:11}};
+const LEG={labels:{color:'#94a3b8',boxWidth:12,font:{family:'DM Sans',size:11}}};
+const charts={};
+function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+
+function buildSidebar(){
+  const mk=(id,checked,label,onChange)=>`<div class="ci"><input type="checkbox" id="${id}" ${checked?'checked':''} onchange="${onChange}"><label for="${id}">${label}</label></div>`;
+  document.getElementById('ptF').innerHTML=['haircare','skincare','cosmetics'].map(t=>mk('pt_'+t,true,t.charAt(0).toUpperCase()+t.slice(1),`toggle('pt','${t}',this.checked)`)).join('');
+  document.getElementById('dmF').innerHTML=['Female','Male','Non-binary','Unknown'].map(d=>mk('dm_'+d.replace(/ /g,'_'),true,d,`toggle('dm','${d}',this.checked)`)).join('');
+  document.getElementById('spF').innerHTML=['Supplier 1','Supplier 2','Supplier 3','Supplier 4','Supplier 5'].map(s=>mk('sp_'+s.replace(/ /g,'_'),true,s,`toggle('sp','${s}',this.checked)`)).join('');
+  const ls=document.getElementById('locF');
+  ['All','Mumbai','Delhi','Kolkata','Bangalore','Chennai'].forEach(l=>{const o=document.createElement('option');o.value=o.textContent=l;ls.appendChild(o);});
+  ls.onchange=e=>{F.loc=e.target.value;upd();};
+  document.getElementById('carF').innerHTML=['All','Carrier A','Carrier B','Carrier C'].map(c=>`<button class="tb ${c==='All'?'active':''}" onclick="setToggle('car','${c}',this,'carF')">${c==='All'?'All':c}</button>`).join('');
+  document.getElementById('trF').innerHTML=['Road','Air','Rail','Sea'].map(m=>mk('tr_'+m,true,m,`toggle('tr','${m}',this.checked)`)).join('');
+  document.getElementById('insF').innerHTML=['All','Pass','Fail','Pending'].map(r=>`<button class="tb ${r==='All'?'active':''}" onclick="setToggle('ins','${r}',this,'insF')">${r}</button>`).join('');
+  document.getElementById('prMin').oninput=e=>{F.prMin=+e.target.value||0;upd();};
+  document.getElementById('prMax').oninput=e=>{F.prMax=+e.target.value||100;upd();};
+  document.getElementById('rvMin').oninput=e=>{F.rvMin=+e.target.value||0;upd();};
+  document.getElementById('rvMax').oninput=e=>{F.rvMax=+e.target.value||10000;upd();};
+}
+
+function toggle(field,val,checked){if(checked){if(!F[field].includes(val))F[field].push(val);}else{F[field]=F[field].filter(v=>v!==val);}upd();}
+function setToggle(field,val,btn,parentId){F[field]=val;document.querySelectorAll('#'+parentId+' .tb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');upd();}
+
+function resetAll(){
+  F={pt:['haircare','skincare','cosmetics'],dm:['Female','Male','Non-binary','Unknown'],sp:['Supplier 1','Supplier 2','Supplier 3','Supplier 4','Supplier 5'],loc:'All',car:'All',tr:['Road','Air','Rail','Sea'],ins:'All',prMin:0,prMax:100,rvMin:0,rvMax:10000};
+  document.querySelectorAll('.ci input').forEach(e=>e.checked=true);
+  document.getElementById('locF').value='All';
+  ['prMin','prMax','rvMin','rvMax'].forEach(id=>{const el=document.getElementById(id);if(id==='prMin'||id==='rvMin')el.value=0;else if(id==='prMax')el.value=100;else el.value=10000;});
+  document.querySelectorAll('.tb').forEach(b=>b.classList.toggle('active',b.textContent==='All'));
+  upd();
+}
+
+function upd(){
+  const d=gf();
+  document.getElementById('recBadge').textContent=`Showing ${d.length} of ${DATA.length} SKUs`;
+  const tr=d.reduce((a,r)=>a+r['Revenue generated'],0);
+  const tu=d.reduce((a,r)=>a+r['Number of products sold'],0);
+  const ad=avg(d.map(r=>r['Defect rates']));
+  const as=avg(d.map(r=>r['Shipping costs']));
+  const pr=d.length?d.filter(r=>r['Inspection results']==='Pass').length/d.length*100:0;
+  document.getElementById('kRev').textContent='$'+fmt(tr,0);
+  document.getElementById('kUnits').textContent=fmt(tu,0);
+  document.getElementById('kDefect').textContent=fmt(ad,2)+'%';
+  document.getElementById('kShip').textContent='$'+fmt(as,2);
+  document.getElementById('kPass').textContent=fmt(pr,1)+'%';
+  c1(d);c2(d);c3(d);c4(d);c5(d);c6(d);c7(d);c8(d);c9(d);c10(d);c11(d);c12(d);
+}
+
+function c1(d){dc('c1');const types=['haircare','skincare','cosmetics'];const revs=types.map(t=>d.filter(r=>r['Product type']===t).reduce((a,r)=>a+r['Revenue generated'],0));charts['c1']=new Chart(document.getElementById('c1'),{type:'bar',data:{labels:types.map(t=>t.charAt(0).toUpperCase()+t.slice(1)),datasets:[{label:'Total Revenue ($)',data:revs,backgroundColor:types.map(t=>TC[t]),borderRadius:7,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TTP,callbacks:{label:c=>' $'+fmt(c.parsed.y,0)}}},scales:{x:CW.x,y:{...CW.y,ticks:{...CW.y.ticks,callback:v=>'$'+fmt(v,0)}}}}});}
+
+function c2(d){dc('c2');const demos=['Female','Male','Non-binary','Unknown'];const revs=demos.map(dm=>d.filter(r=>r['Customer demographics']===dm).reduce((a,r)=>a+r['Revenue generated'],0));const tot=revs.reduce((a,b)=>a+b,0);charts['c2']=new Chart(document.getElementById('c2'),{type:'doughnut',data:{labels:demos,datasets:[{data:revs,backgroundColor:demos.map(dm=>DC[dm]),borderColor:'#1e293b',borderWidth:3}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'right',labels:{color:'#94a3b8',boxWidth:12,font:{family:'DM Sans',size:11},padding:12}},tooltip:{...TTP,callbacks:{label:c=>` $${fmt(c.parsed,0)} (${fmt(c.parsed/tot*100,1)}%)`}}}}});}
+
+function c3(d){dc('c3');const sups=['Supplier 1','Supplier 2','Supplier 3','Supplier 4','Supplier 5'];const lt=sups.map(s=>avg(d.filter(r=>r['Supplier name']===s).map(r=>r['Lead time'])));const df=sups.map(s=>avg(d.filter(r=>r['Supplier name']===s).map(r=>r['Defect rates']))*10);const mc=sups.map(s=>avg(d.filter(r=>r['Supplier name']===s).map(r=>r['Manufacturing costs'])));charts['c3']=new Chart(document.getElementById('c3'),{type:'bar',data:{labels:sups,datasets:[{label:'Avg Lead Time (days)',data:lt,backgroundColor:'#0d9488',borderRadius:5},{label:'Defect Rate ×10',data:df,backgroundColor:'#f59e0b',borderRadius:5},{label:'Avg Mfg Cost ($)',data:mc,backgroundColor:'#f43f5e',borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:LEG,tooltip:TTP},scales:{x:CW.x,y:CW.y}}});}
+
+function c4(d){dc('c4');const s=[...d].sort((a,b)=>a['Defect rates']-b['Defect rates']);charts['c4']=new Chart(document.getElementById('c4'),{type:'bar',data:{labels:s.map(r=>r['SKU']),datasets:[{label:'Defect Rate (%)',data:s.map(r=>r['Defect rates']),backgroundColor:s.map(r=>IC[r['Inspection results']]+'cc'),borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TTP,callbacks:{label:c=>` ${fmt(c.parsed.y,2)}% — ${s[c.dataIndex]['Inspection results']}`}}},scales:{x:{...CW.x,ticks:{display:false}},y:CW.y}}});}
+
+function c5(d){dc('c5');const modes=['Road','Air','Rail','Sea'];const costs=modes.map(m=>avg(d.filter(r=>r['Transportation modes']===m).map(r=>r['Shipping costs'])));const times=modes.map(m=>avg(d.filter(r=>r['Transportation modes']===m).map(r=>r['Shipping times']))*10);charts['c5']=new Chart(document.getElementById('c5'),{type:'bar',data:{labels:modes,datasets:[{label:'Avg Shipping Cost ($)',data:costs,backgroundColor:'#0d9488',borderRadius:5},{label:'Avg Ship Time ×10 (days)',data:times,backgroundColor:'#f59e0b',borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:LEG,tooltip:TTP},scales:{x:CW.x,y:CW.y}}});}
+
+function c6(d){dc('c6');const types=['haircare','skincare','cosmetics'];const ds=types.map(t=>({label:t.charAt(0).toUpperCase()+t.slice(1),data:d.filter(r=>r['Product type']===t).map(r=>({x:r['Stock levels'],y:r['Revenue generated'],sku:r['SKU'],price:r['Price'],supplier:r['Supplier name']})),backgroundColor:TC[t]+'aa',borderColor:TC[t],borderWidth:1,pointRadius:5,pointHoverRadius:7}));charts['c6']=new Chart(document.getElementById('c6'),{type:'scatter',data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:LEG,tooltip:{...TTP,callbacks:{label:c=>[c.raw.sku,`Stock: ${c.raw.x}`,'Rev: $'+fmt(c.raw.y,0),'Price: $'+fmt(c.raw.price,2),c.raw.supplier]}}},scales:{x:{...CW.x,title:{display:true,text:'Stock Levels',color:'#64748b',font:{family:'DM Sans',size:11}}},y:{...CW.y,title:{display:true,text:'Revenue ($)',color:'#64748b',font:{family:'DM Sans',size:11}},ticks:{...CW.y.ticks,callback:v=>'$'+fmt(v,0)}}}}});}
+
+function c7(d){dc('c7');const types=['haircare','skincare','cosmetics'];const ds=types.map(t=>({label:t.charAt(0).toUpperCase()+t.slice(1),data:d.filter(r=>r['Product type']===t).map(r=>({x:r['Price'],y:r['Number of products sold'],sku:r['SKU']})),backgroundColor:TC[t]+'aa',borderColor:TC[t],borderWidth:1,pointRadius:5,pointHoverRadius:7}));charts['c7']=new Chart(document.getElementById('c7'),{type:'scatter',data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:LEG,tooltip:{...TTP,callbacks:{label:c=>[c.raw.sku,'Price: $'+fmt(c.raw.x,2),'Units: '+fmt(c.raw.y,0)]}}},scales:{x:{...CW.x,title:{display:true,text:'Price ($)',color:'#64748b',font:{family:'DM Sans',size:11}}},y:{...CW.y,title:{display:true,text:'Units Sold',color:'#64748b',font:{family:'DM Sans',size:11}}}}}});}
+
+function c8(d){dc('c8');const cars=['Carrier A','Carrier B','Carrier C'];const costs=cars.map(c=>avg(d.filter(r=>r['Shipping carriers']===c).map(r=>r['Shipping costs'])));const times=cars.map(c=>avg(d.filter(r=>r['Shipping carriers']===c).map(r=>r['Shipping times']))*10);const vols=cars.map(c=>d.filter(r=>r['Shipping carriers']===c).length*10);charts['c8']=new Chart(document.getElementById('c8'),{type:'bar',data:{labels:cars,datasets:[{label:'Avg Ship Cost ($)',data:costs,backgroundColor:'#0d9488',borderRadius:5},{label:'Avg Ship Time ×10',data:times,backgroundColor:'#f59e0b',borderRadius:5},{label:'Volume ×10 SKUs',data:vols,backgroundColor:'#3b82f6',borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:LEG,tooltip:TTP},scales:{x:CW.x,y:CW.y}}});}
+
+function c9(d){dc('c9');const cities=['Mumbai','Delhi','Kolkata','Bangalore','Chennai'];const revs=cities.map(c=>d.filter(r=>r['Location']===c).reduce((a,r)=>a+r['Revenue generated'],0)/1000);const defs=cities.map(c=>avg(d.filter(r=>r['Location']===c).map(r=>r['Defect rates']))*1000);charts['c9']=new Chart(document.getElementById('c9'),{type:'bar',data:{labels:cities,datasets:[{label:'Total Revenue ($K)',data:revs,backgroundColor:'#0d9488',borderRadius:5},{label:'Avg Defect ×1000',data:defs,backgroundColor:'#f43f5e',borderRadius:5}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:LEG,tooltip:TTP},scales:{x:CW.x,y:CW.y}}});}
+
+function c10(d){dc('c10');const types=['haircare','skincare','cosmetics'];const ds=types.map(t=>({label:t.charAt(0).toUpperCase()+t.slice(1),data:d.filter(r=>r['Product type']===t).map(r=>({x:r['Production volumes'],y:r['Manufacturing costs'],sku:r['SKU']})),backgroundColor:TC[t]+'aa',borderColor:TC[t],borderWidth:1,pointRadius:5,pointHoverRadius:7}));charts['c10']=new Chart(document.getElementById('c10'),{type:'scatter',data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:LEG,tooltip:{...TTP,callbacks:{label:c=>[c.raw.sku,'Volume: '+c.raw.x,'Cost: $'+fmt(c.raw.y,2)]}}},scales:{x:{...CW.x,title:{display:true,text:'Production Volume',color:'#64748b',font:{family:'DM Sans',size:11}}},y:{...CW.y,title:{display:true,text:'Mfg Cost ($)',color:'#64748b',font:{family:'DM Sans',size:11}}}}}});}
+
+function c11(d){dc('c11');const routes=['Route A','Route B','Route C'];const lc=routes.map(r=>avg(d.filter(x=>x['Routes']===r).map(x=>x['Shipping costs']+x['Costs'])));const times=routes.map(r=>avg(d.filter(x=>x['Routes']===r).map(x=>x['Shipping times']))*100);charts['c11']=new Chart(document.getElementById('c11'),{type:'bar',data:{labels:routes,datasets:[{label:'Avg Logistics Cost ($)',data:lc,backgroundColor:'#0d9488',borderRadius:5},{label:'Avg Delivery Time ×100',data:times,backgroundColor:'#f59e0b',borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:LEG,tooltip:TTP},scales:{x:CW.x,y:CW.y}}});}
+
+function c12(d){dc('c12');const types=['haircare','skincare','cosmetics'];const pass=types.map(t=>{const g=d.filter(r=>r['Product type']===t);return g.length?g.filter(r=>r['Inspection results']==='Pass').length/g.length*100:0;});const fail=types.map(t=>{const g=d.filter(r=>r['Product type']===t);return g.length?g.filter(r=>r['Inspection results']==='Fail').length/g.length*100:0;});const pend=types.map(t=>{const g=d.filter(r=>r['Product type']===t);return g.length?g.filter(r=>r['Inspection results']==='Pending').length/g.length*100:0;});charts['c12']=new Chart(document.getElementById('c12'),{type:'bar',data:{labels:types.map(t=>t.charAt(0).toUpperCase()+t.slice(1)),datasets:[{label:'Pass (%)',data:pass,backgroundColor:'#22c55e',stack:'a'},{label:'Fail (%)',data:fail,backgroundColor:'#f43f5e',stack:'a'},{label:'Pending (%)',data:pend,backgroundColor:'#f59e0b',stack:'a'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:LEG,tooltip:{...TTP,callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.parsed.y,1)}%`}}},scales:{x:CW.x,y:{...CW.y,stacked:true,max:100,ticks:{...CW.y.ticks,callback:v=>v+'%'}}}}});}
+
+buildSidebar();
+upd();
+</script>
+</body>
+</html>
